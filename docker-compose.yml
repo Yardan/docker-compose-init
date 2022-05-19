@@ -1,0 +1,70 @@
+version: "3.7"
+services:
+  web:
+    container_name: project-web
+    image: nginx
+    volumes:
+      - ./.docker/nginx/site.conf:/etc/nginx/conf.d/default.conf
+      - .:/var/www/html
+    environment:
+      - VIRTUAL_HOST=project.loc
+    ports:
+      - 8111:80
+    restart: always
+    env_file: .env
+    depends_on:
+      - php
+
+  php:
+    container_name: project-php
+    build: .docker/php
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: always
+    env_file: .env
+    volumes:
+      - ./.docker/php/php.ini:/usr/local/etc/php/conf.d/php.ini
+      - ./.docker/php/xdebug.ini:/usr/local/etc/php/conf.d/xdebug.ini
+      - ./.docker/php/error_reporting.ini:/usr/local/etc/php/conf.d/error_reporting.ini
+      - .:/var/www/html
+      - ~/.ssh:/root/.ssh
+    depends_on:
+      - db
+
+  db:
+    container_name: project-db
+    image: mariadb
+    restart: always
+    ports:
+      - 3307:3306
+    environment:
+      MYSQL_ROOT_PASSWORD: 123
+      MYSQL_DATABASE: project_db
+    env_file: .env
+    volumes:
+      - mariadb-data:/var/lib/mysql
+
+  nginx-proxy:
+    image: nginxproxy/nginx-proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "/var/run/docker.sock:/tmp/docker.sock:ro"
+      - "./vhost.d:/etc/nginx/vhost.d:ro"
+      - "./.docker/nginx-proxy/ssl:/etc/nginx/certs:ro"
+
+  memcached:
+    container_name: project-memcached
+    image: memcached:latest
+
+  mailhog:
+    container_name: project-mailhog
+    image: mailhog/mailhog:latest
+    ports:
+      - 8025:8025
+      - 1025:1025
+    restart: always
+
+volumes:
+  mariadb-data:
