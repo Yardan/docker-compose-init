@@ -19,9 +19,12 @@ RUN apt-get update && apt-get install -y \
         htop \
         openssh-client \
         net-tools \
-        procps
+        procps \
+        git
 
 RUN pecl install xdebug memcached
 
 RUN docker-php-ext-install intl pdo_mysql mysqli zip sockets
 RUN docker-php-ext-enable xdebug memcached mysqli
+
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
